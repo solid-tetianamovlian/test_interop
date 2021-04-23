@@ -8,24 +8,34 @@ void main() {
 
 Future<void> onBuildAddedHandler(
     DocumentSnapshot snapshot, EventContext context) async {
+  print('onBuildAddedHandler');
   final buildData = snapshot.data;
+  print(buildData.toMap());
 
   final projectId = buildData.getString('projectId');
+  print('projectId: $projectId');
   final buildDay = buildData.getTimestamp('startedAt');
   final buildDuration = buildData.getInt('duration');
+  print('duration: $buildDuration');
 
   final utcDay = _getDateTimeUTC(buildDay);
+  print(utcDay);
   final buildDayStatusFieldName = _getBuildDayStatusFieldName(buildData);
+  print('buildDayStatusFieldName: $buildDayStatusFieldName');
   final documentId = '${projectId}_${utcDay.millisecondsSinceEpoch}';
+  print('documentId: $documentId');
 
   final data = {
     'projectId': projectId,
-    buildDayStatusFieldName: incrementField(1),
-    'totalDuration': incrementField(buildDuration),
+    buildDayStatusFieldName: _incrementField(1),
+    'totalDuration': _incrementField(buildDuration),
     'day': utcDay,
   };
 
+  print(data);
+
   try {
+    print('in try 1');
     await snapshot.firestore
         .collection('/build_days')
         .document(documentId)
@@ -33,8 +43,10 @@ Future<void> onBuildAddedHandler(
           DocumentData.fromMap(data),
           SetOptions(merge: true),
         );
+    print('in try 2');
   } catch (error) {
-    await addTask('build_days_created', snapshot, error, utcDay);
+    print('in error');
+    await _addTask('build_days_created', snapshot, error, utcDay);
   }
 }
 
@@ -50,11 +62,12 @@ String _getBuildDayStatusFieldName(DocumentData documentData) {
   return buildStatus.split('.').last;
 }
 
-FieldValue incrementField(int value) {
+FieldValue _incrementField(int value) {
+  print('in field increment');
   return Firestore.fieldValues.increment(value);
 }
 
-void addTask(
+void _addTask(
   String code,
   DocumentSnapshot snapshot,
   String error,
